@@ -41,3 +41,10 @@
 ```
 
 - To avoid images getting lost and wasting storage, for example when rebooting exactly when a notification is send, at the startup of the program every image thats still in the images.json file will be deleted
+
+### Todo
+
+  - [ ] Support Linux
+  - [ ] Support MacOS
+  - [ ] Add link to livestream button if available
+  - [ ] Create installer with autostart
