@@ -48,3 +48,5 @@
   - [ ] Support MacOS
   - [ ] Add link to livestream button if available
   - [ ] Create installer with autostart
+  - [ ] Add support for event notifications
+  - [ ] Add task to system tray for settings

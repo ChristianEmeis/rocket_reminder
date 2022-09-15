@@ -17,6 +17,10 @@ use std::{
     borrow::Cow, collections::HashMap, path::PathBuf,
     time::Duration,
 };
+use notify_rust::Hint;
+#[cfg(all(feature = "images", unix, not(target_os = "macos")))]
+use notify_rust::Image;
+use notify_rust::Notification;
 
 mod util;
 
@@ -72,7 +76,7 @@ async fn download_image(url: &str, id: String) -> Result<PathBuf, Box<dyn std::e
     Ok(path)
 }
 
-
+#[cfg(target_os="windows")]
 async fn send_notification(notification: NotificationData) {
     let image_id = get_random_id();
     let path_to_image = download_image(&notification.image_path, image_id.clone()).await.expect("Failed to download image");
@@ -118,6 +122,33 @@ async fn send_notification(notification: NotificationData) {
         remove_downloaded_image_from_json(image_id);
         
     });
+}
+
+#[cfg(all(feature = "images", unix, not(target_os = "macos"), not(target_os = "windows")))]
+async fn send_notification(notification: NotificationData) {
+    let image_id = get_random_id();
+    let path_to_image = download_image(&notification.image_path, image_id.clone()).await.expect("Failed to download image");
+    let path_to_image = dunce::canonicalize(path_to_image).unwrap();
+    add_downloaded_image_to_json(path_to_image.to_str().unwrap().to_string(), image_id.clone());
+
+    let url = notification.url;
+
+    let barrier = std::sync::Arc::new(tokio::sync::Semaphore::new(0));
+    let barrier_ref1 = barrier.clone();
+    let barrier_ref2 = barrier.clone();
+    let barrier_ref3 = barrier.clone();
+
+    Notification::new().summary(&notification.name).body(&notification.notification_text).action("More","more").image(path_to_image)?.show()?.wait_for_action(|action|
+        match action {
+            "more" => open_browser(notification.url),
+            "__closed" => (),
+            _ => ()
+        }
+    );
+    if let Err(e) = tokio::fs::remove_file(path_to_image).await {
+        println!("{}", e);
+    };
+    remove_downloaded_image_from_json(image_id);
 }
 
 fn open_browser(url: &str) {
